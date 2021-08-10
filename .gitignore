@@ -1,0 +1,4 @@
+.direnv
+.ipynb_checkpoints
+*.ipynb
+*.pyc
