@@ -1,21 +1,23 @@
 
 import requests
+from urllib.parse import urljoin
 import logging
 logger = logging.getLogger(__name__)
 
 from .auth import Auth
 
 class Transport:
-    def __init__(self, auth: Auth) -> None:
+    def __init__(self, base_url: str, auth: Auth) -> None:
+        self.base_url = base_url
         self.auth = auth
         self.is_connected = False
         self.session = None
 
-    def post(self, document, path):
+    def post(self, path: str, document: str):
         raise NotImplementedError
 
     
-    def get(self, path):
+    def get(self, path: str):
         raise NotImplementedError
 
     def put(self, document, path):
@@ -44,3 +46,8 @@ class RequestsTransport(Transport):
     def close(self):
         self.session.close()
 
+    def get(self, path):
+        return self.session.get(urljoin(self.base_url, path))
+
+    def post(self, path, document):
+        return self.session.post(urljoin(self.base_url, path), data=document)

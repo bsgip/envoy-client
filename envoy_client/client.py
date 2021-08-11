@@ -1,17 +1,18 @@
-
+from typing import List
 
 import xmltodict
 
 from .transport import Transport
 from .auth import Auth
-from .models import EndDeviceList
+from .models import END_DEVICE_CREATE_TEMPLATE_KWARGS, EndDevice, EndDeviceList
+
+import logging
+logger = logging.getLogger(__name__)
 
 class AggregatorClient:
-    def __init__(self, transport: Transport, auth: Auth, lfdi: int) -> None:
+    def __init__(self, transport: Transport, lfdi: str) -> None:
         self.transport = transport
-        self.auth = auth
         self.lfdi = lfdi
-
 
     def get_end_devices(self, include_self=False) -> EndDeviceList:
         """Retrieve all associated `EndDevice`s.
@@ -27,10 +28,17 @@ class AggregatorClient:
             List of `EndDevice`s (as an `EndDeviceList`)
         """
         response = self.transport.get('/edev')
-        end_device_list = EndDeviceList(**xmltodict.parse(response.body))
+        print(response.content)
+        print(xmltodict.parse(response.content)['EndDeviceList'])
+        end_device_list = EndDeviceList(**xmltodict.parse(response.content)['EndDeviceList'])
+        if not include_self and end_device_list.end_device:
+            if end_device_list.end_device[0].lfdi == self.lfdi:
+                end_device_list.end_device = end_device_list.end_device[1:]
+            else:
+                logger.warning('First EndDevice does not match client LFDI')
         return end_device_list
 
-    def create_end_devices(self, end_device_list: EndDeviceList, create_der=False, abort_on_error=True) -> None:
+    def create_end_devices(self, end_devices: List[EndDevice], create_der=False, abort_on_error=True) -> None:
         """Create the complete `EndDeviceList` on the server. This assumes all
         devices are to be created and will (optionally) create all DER linked to these
         devices.
@@ -43,7 +51,10 @@ class AggregatorClient:
                 `EndDevice`
             abort_on_error (bool): Abort creation of devices after first error
         """
-        raise NotImplementedError
+        errors = []
+        for end_device in end_devices: 
+            self.transport.post('/edev', xmltodict.unparse(end_device.dict(**END_DEVICE_CREATE_TEMPLATE_KWARGS), full_document=False))
+        return
 
     def reconcile_end_devices(self, server_device_list: EndDeviceList, client_device_list: EndDeviceList) -> None:
         raise NotImplementedError

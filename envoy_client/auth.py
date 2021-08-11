@@ -22,7 +22,6 @@ class LocalModeXTokenAuth:
         Args:
             session (Session): Transport `Session` object
         """
-        session.headers['X-Token'] = self.lfdi
-
-
-
+        # Convert to integer as this is what is checked against
+        session.headers['X-Token'] = str(int(self.lfdi, 16))
+        session.headers['X-Forwarded-Client-Cert'] = ""  # Required for local auth
