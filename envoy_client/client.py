@@ -48,7 +48,7 @@ class AggregatorClient:
         return self.transport.post(f'/edev/{edev_id}/der', der.to_xml(mode='create'))
 
     def create_der_capability(self, der_capability: DERCapability, edev_id: int, der_id: int):
-        return self.transport.post(f'/edev/{edev_id}/der/{der_id}/derc', der_capability.to_xml(mode='create'))
+        return self.transport.put(f'/edev/{edev_id}/der/{der_id}/dercap', der_capability.to_xml(mode='create'))
 
     def create_connection_point(self, connection_point: ConnectionPoint, edev_id: int):
         return self.transport.post(f'/edev/{edev_id}/cp', connection_point.to_xml(mode='create'))

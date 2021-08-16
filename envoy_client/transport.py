@@ -56,6 +56,9 @@ class RequestsTransport(Transport):
     def post(self, path, document):
         return self.session.post(urljoin(self.base_url, path), data=document)
 
+    def put(self, path, document):
+        return self.session.put(urljoin(self.base_url, path), document)
+
 
 class DocumentationGeneratingTransport(RequestsTransport):
 

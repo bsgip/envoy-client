@@ -129,7 +129,16 @@ class PowerSourceType(enum.IntEnum):
 
 class ActivePower(BaseModel):
     multipler: int = 0
-    value: float = Field()
+    value: int = Field()
+
+    class XmlTemplate:
+        create = {
+            'include': {'multiplier', 'value'},
+            'by_alias': True,
+            'exclude_unset': False
+        }
+        show = create
+        list = create
 
 
 class Link(BaseModel):
@@ -161,7 +170,7 @@ class DeviceInformation(BaseModel):
 
 
 class ValueWithMultiplier(BaseModel):
-    value: float
+    value: int
     multiplier: int = 0
 
 
@@ -193,7 +202,7 @@ class DERCapability(BaseModel):
     class XmlTemplate:
         create = {
             'by_alias': True,
-            'exclude_unset': True
+            'exclude_none': True
         }
 
 
