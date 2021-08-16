@@ -25,6 +25,7 @@ DEVICE_INFORMATION_CREATE_TEMPLATE = {
 class BaseModel(PydanticBaseModel):
     class Config:
         allow_population_by_field_name = True
+        use_enum_values = True
 
     class XmlTemplate:
         create = {}
@@ -138,7 +139,7 @@ class Link(BaseModel):
 class DeviceInformation(BaseModel):
     functions_implemented: Optional[FunctionsImplementedType] = Field(alias='functionsImplemented')
     gps_location: Optional[GPSLocationType] = Field(alias='gpsLocation')
-    lfdi:  int = Field(alias='lFDI')
+    lfdi: str = Field(alias='lFDI')
     # mfDate: 
     mf_hw_ver: Optional[str] = Field(alias='mfHwVer')
     mf_id: Optional[int] = Field(alias='mfID')
@@ -150,32 +151,90 @@ class DeviceInformation(BaseModel):
     sw_act_time: Optional[int] = Field(alias='swActTime')
     sw_ver: Optional[str] = Field(alias='swVer')
 
+    class XmlTemplate:
+        create = {
+            'exclude_unset': True,
+            'by_alias': True
+        }
+        show = create
+        list = create
+
+
+class ValueWithMultiplier(BaseModel):
+    value: float
+    multiplier: int = 0
+
+
+class DERType(enum.IntEnum):
+    na_unknown = 0
+    virtual_or_mixed_DER = 1
+    reciprocating_engine = 2
+    fuel_cell = 3
+    pv_system = 4
+    combined_heat_power = 5
+    other_generation = 6
+    other_storage = 80
+    electric_vehicle = 81
+    EVSE = 82
+    combined_pv_storage = 83
+
 
 class DERCapability(BaseModel):
     modes_supported: int = Field(default=1, alias='modesSupported')
-    rtg_max_w: float = Field(alias='rtgMaxW')
-    type_: int = Field(alias='type')
+    rtg_max_a: Optional[ValueWithMultiplier] = Field(alias='rtgMaxA')
+    rtg_max_ah: Optional[ValueWithMultiplier] = Field(alias='rtgMaxAh')
+    rtg_max_w: Optional[ValueWithMultiplier] = Field(alias='rtgMaxW')
+    rtg_max_charge_rate_va: Optional[ValueWithMultiplier] = Field(alias='rtgMaxChargeRateVA')
+    rtg_max_charge_rate_w: Optional[ValueWithMultiplier] = Field(alias='rtgMaxChargeRateW')
+    rtg_max_discharge_rate_va: Optional[ValueWithMultiplier] = Field(alias='rtgMaxDischargeRateVA')
+    rtg_max_discharge_rate_w: Optional[ValueWithMultiplier] = Field(alias='rtgMaxDischargeRateW')
+    type_: DERType = Field(alias='type')
+
+    class XmlTemplate:
+        create = {
+            'by_alias': True,
+            'exclude_unset': True
+        }
 
 
 class DER(BaseModel):
-    der_capability: DERCapability = Field(alias='DERCapability')
+    der_capability: Optional[DERCapability] = Field(alias='DERCapability')
+    class XmlTemplate:
+        create = {
+            'include': {},
+            'by_alias': True,
+        }
+        link = {}
+        show = {}
 
+
+class ConnectionPoint(BaseModel):
+    connection_point_id: Optional[str] = Field(alias='connectionPointID')
+    meter_id: Optional[str] = Field(alias='meterID')
+
+    class XmlTemplate:
+        create = {
+            'include': {'connection_point_id', 'meter_id'},
+            'by_alias': True
+        }
+        show = create
+        list = create
 
 class EndDevice(BaseModel):
     device_category: DeviceCategoryType = Field(alias='deviceCategory') # TODO Actually use enum values
     lfdi: str = Field(alias='lFDI')
     sfdi: Optional[str] = Field(alias='sFDI')
+    changed_time: int = Field(default=0, alias='changedTime')
+    post_rate: int = Field(default=0, alias='postRate')
+    enabled: bool = Field(default=True)
     der_list_link: Optional[Link] = Field(default=None, alias="DERListLink")
     device_information_link: Optional[Link] = Field(default=None, alias="DeviceInformationLink")
     der: Optional[List[DER]] = Field(alias='DER')
     device_information: Optional[DeviceInformation] = Field(alias='deviceInformation')
 
-    class Config:
-        use_enum_values = True
-
     class XmlTemplate:
         create = {
-            'include': {'device_category', 'lfdi', 'sfdi'},
+            'include': {'device_category', 'lfdi', 'sfdi', 'changed_time', 'post_rate', 'enabled'},
             'by_alias': True,
         }
         link = {
