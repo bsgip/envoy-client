@@ -10,6 +10,12 @@ from .models import DER, DeviceCategoryType, DeviceInformation, EndDevice, EndDe
 import logging
 logger = logging.getLogger(__name__)
 
+def resource_id_from_response(response):
+    if hasattr(response, 'headers'):
+        if 'location' in response.headers:
+            return int(response.headers['location'].split('/')[-1])
+    raise ValueError('Response object has no location resource.')
+
 class AggregatorClient:
     def __init__(self, transport: Transport, lfdi: str) -> None:
         self.transport = transport
@@ -41,17 +47,21 @@ class AggregatorClient:
     def create_end_device(self, end_device: EndDevice):
         return self.transport.post('/edev', end_device.to_xml(mode='create'))
 
+    def update_end_device(self, end_device: EndDevice, edev_id: int):
+        # TODO Untested
+        return self.transport.put(f'/edev/{edev_id}', end_device.to_xml('create'))
+
     def create_device_information(self, device_information: DeviceInformation, edev_id: int):
-        return self.transport.post(f'/edev/{edev_id}/di', device_information.to_xml(mode='create'))
+        return self.transport.put(f'/edev/{edev_id}/di', device_information.to_xml(mode='create'))
 
     def create_der(self, der: DER, edev_id: int):
         return self.transport.post(f'/edev/{edev_id}/der', der.to_xml(mode='create'))
 
     def create_der_capability(self, der_capability: DERCapability, edev_id: int, der_id: int):
-        return self.transport.put(f'/edev/{edev_id}/der/{der_id}/dercap', der_capability.to_xml(mode='create'))
+        self.transport.put(f'/edev/{edev_id}/der/{der_id}/dercap', der_capability.to_xml(mode='create'))
 
     def create_connection_point(self, connection_point: ConnectionPoint, edev_id: int):
-        return self.transport.post(f'/edev/{edev_id}/cp', connection_point.to_xml(mode='create'))
+        return self.transport.put(f'/edev/{edev_id}/cp', connection_point.to_xml(mode='create'))
     
     @property
     def self_device(self):
@@ -60,10 +70,42 @@ class AggregatorClient:
     def create_self_device(self):
         return self.create_end_device(self.self_device)
 
-    def get_end_device(self, resource_location):
-        return EndDevice.from_xml(self.transport.get(resource_location).content)
+    def get_end_device(self, edev_id: int):
+        response = self.transport.get(f'/edev/{edev_id}')
+        if response.status_code == 200:
+            return EndDevice.from_xml(response.content)
+        logger.warning(f'No EndDevice found with edevID {edev_id}')
+        return None
 
-    def create_end_devices(self, end_devices: List[EndDevice], create_der=False, abort_on_error=True) -> None:
+    def sync_end_device(self, end_device: EndDevice, edev_id: Optional[int]=None, create_nested: bool=False):
+        if edev_id is None:
+            logger.info('No edevID supplied. Attempting to create EndDevice')
+            response = self.create_end_device(end_device)
+            if response.status_code == 201:
+                edev_id = resource_id_from_response(response)
+            else:
+                raise ValueError(f'Attempt to create EndDevice returned {response.status_code}: {response.content}')
+        
+        server_end_device = self.get_end_device(edev_id)
+
+        if create_nested:
+            self.create_device_information(end_device.device_information, edev_id=edev_id)
+
+            for der in end_device.der:
+                response = self.create_der(der, edev_id=edev_id)
+                if response.status_code > 201:
+                    logger.warning(f'DER could not be created for EndDevice {edev_id}')
+                der_id = resource_id_from_response(response)
+                if der.der_capability:
+                    response = self.create_der_capability(der.der_capability, edev_id, der_id)
+
+            if end_device.connection_point:
+                self.create_connection_point(end_device.connection_point, edev_id)
+
+        
+
+    
+    def sync_end_devices(self, end_devices: List[EndDevice], create_der=False, abort_on_error=True) -> None:
         """Create the complete `EndDeviceList` on the server. This assumes all
         devices are to be created and will (optionally) create all DER linked to these
         devices.

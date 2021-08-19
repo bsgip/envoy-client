@@ -149,20 +149,20 @@ class DeviceInformation(BaseModel):
     functions_implemented: Optional[FunctionsImplementedType] = Field(alias='functionsImplemented')
     gps_location: Optional[GPSLocationType] = Field(alias='gpsLocation')
     lfdi: str = Field(alias='lFDI')
-    # mfDate: 
-    mf_hw_ver: Optional[str] = Field(alias='mfHwVer')
-    mf_id: Optional[int] = Field(alias='mfID')
-    mf_info: Optional[str] = Field(alias='mfInfo')
-    mf_model: Optional[str] = Field(alias='mfModel')
-    mf_ser_num: Optional[str] = Field(alias='mfSerNum')
-    primary_power: Optional[PowerSourceType] = Field(alias='primaryPower')
-    secondary_power: Optional[PowerSourceType] = Field(alias='secondaryPower')
-    sw_act_time: Optional[int] = Field(alias='swActTime')
-    sw_ver: Optional[str] = Field(alias='swVer')
+    mf_date: int = Field(alias='mfDate', default=0) 
+    mf_hw_ver: Optional[str] = Field(alias='mfHwVer', default='foo')
+    mf_id: Optional[int] = Field(alias='mfID', default=1)
+    mf_info: Optional[str] = Field(alias='mfInfo', default='foo')
+    mf_model: Optional[str] = Field(alias='mfModel', default='foo')
+    mf_ser_num: Optional[str] = Field(alias='mfSerNum', default='foo')
+    primary_power: Optional[PowerSourceType] = Field(alias='primaryPower', default=PowerSourceType.none)
+    secondary_power: Optional[PowerSourceType] = Field(alias='secondaryPower', default=PowerSourceType.none)
+    sw_act_time: Optional[int] = Field(alias='swActTime', default=0)
+    sw_ver: Optional[str] = Field(alias='swVer', default='foo')
 
     class XmlTemplate:
         create = {
-            'exclude_unset': True,
+            'exclude_unset': False,
             'by_alias': True
         }
         show = create
@@ -240,6 +240,7 @@ class EndDevice(BaseModel):
     device_information_link: Optional[Link] = Field(default=None, alias="DeviceInformationLink")
     der: Optional[List[DER]] = Field(alias='DER')
     device_information: Optional[DeviceInformation] = Field(alias='deviceInformation')
+    connection_point:  Optional[ConnectionPoint] = Field(alias='connectionPoint')
 
     class XmlTemplate:
         create = {
