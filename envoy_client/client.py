@@ -10,7 +10,7 @@ from .models import DER, DeviceCategoryType, DeviceInformation, EndDevice, EndDe
 import logging
 logger = logging.getLogger(__name__)
 
-def resource_id_from_response(response):
+def trailing_resource_id_from_response(response):
     if hasattr(response, 'headers'):
         if 'location' in response.headers:
             return int(response.headers['location'].split('/')[-1])
@@ -58,7 +58,7 @@ class AggregatorClient:
         return self.transport.post(f'/edev/{edev_id}/der', der.to_xml(mode='create'))
 
     def create_der_capability(self, der_capability: DERCapability, edev_id: int, der_id: int):
-        self.transport.put(f'/edev/{edev_id}/der/{der_id}/dercap', der_capability.to_xml(mode='create'))
+        return self.transport.put(f'/edev/{edev_id}/der/{der_id}/dercap', der_capability.to_xml(mode='create'))
 
     def create_connection_point(self, connection_point: ConnectionPoint, edev_id: int):
         return self.transport.put(f'/edev/{edev_id}/cp', connection_point.to_xml(mode='create'))
@@ -82,7 +82,7 @@ class AggregatorClient:
             logger.info('No edevID supplied. Attempting to create EndDevice')
             response = self.create_end_device(end_device)
             if response.status_code == 201:
-                edev_id = resource_id_from_response(response)
+                edev_id = trailing_resource_id_from_response(response)
             else:
                 raise ValueError(f'Attempt to create EndDevice returned {response.status_code}: {response.content}')
         
@@ -95,7 +95,7 @@ class AggregatorClient:
                 response = self.create_der(der, edev_id=edev_id)
                 if response.status_code > 201:
                     logger.warning(f'DER could not be created for EndDevice {edev_id}')
-                der_id = resource_id_from_response(response)
+                der_id = trailing_resource_id_from_response(response)
                 if der.der_capability:
                     response = self.create_der_capability(der.der_capability, edev_id, der_id)
 

@@ -1,19 +1,22 @@
 
 
 from envoy_client.models import *
-from envoy_client.client import AggregatorClient
+from envoy_client.client import AggregatorClient, trailing_resource_id_from_response
 from envoy_client.transport import DocumentationGeneratingTransport, RequestsTransport
 from envoy_client.auth import LocalModeXTokenAuth
 
-aggregator_lfdi = '0x21352135135'
+# This is derived from the client certificate and will be supplied to the aggregator/client
+aggregator_lfdi = '0x21352135135'  
+
 
 client = AggregatorClient(
-    # transport=DocumentationGeneratingTransport('https://server-location', auth=None),
-    transport=RequestsTransport('http://localhost:8004', auth=LocalModeXTokenAuth(aggregator_lfdi)),
+    transport=DocumentationGeneratingTransport('https://server-location', auth=None),
     lfdi=aggregator_lfdi
 )
 
-lfdi = 0x000111100001121
+# The LFDI will normally be derived from an internal aggregator globally unique identifier
+# for each system
+lfdi = 0x0001111000011f
 end_device = EndDevice(
     lfdi=lfdi, 
     device_category=DeviceCategoryType.combined_pv_and_storage,
@@ -25,21 +28,32 @@ end_device = EndDevice(
     der=[DER(der_capability=DERCapability(
         type=DERType.combined_pv_storage,
         rtg_max_w=ValueWithMultiplier(value=5000)
-    ))]
+    ))],
+    connection_point=ConnectionPoint(
+        meter_id='NMI123'
+    )
 )
 
-print(client.create_end_device(client.self_device))
 
+# POST EndDevice
 response = client.create_end_device(end_device)
-print(response.headers['location'])
+edev_id = trailing_resource_id_from_response(response)
 
-edev_id = int(response.headers['location'].split('/')[-1])
+# PUT DeviceInformation
+client.create_device_information(end_device.device_information, edev_id=edev_id)
 
-response = client.create_der(end_device.der[0], edev_id=edev_id)
+# POST DER
+# Note: normally there will only be one `DER`, it is possible however to have multiple
+# as demonstrated here.
+der_ids = []
+for der in end_device.der:
+    response = client.create_der(der, edev_id=edev_id)
+    der_id = trailing_resource_id_from_response(response)
+    der_ids.append(der_id)
 
-der_id = int(response.headers['location'].split('/')[-1])
+# PUT DERCapability
+for (der_id, der) in zip(der_ids, end_device.der):
+    client.create_der_capability(der.der_capability, edev_id=edev_id, der_id=der_id)
 
-response = (client.create_der_capability(end_device.der[0].der_capability, edev_id=edev_id, der_id=der_id))
-
-print(response.content)
-print(client.create_device_information(end_device.device_information, edev_id=edev_id))
+# POST ConnectionPoint
+client.create_connection_point(end_device.connection_point, edev_id=edev_id)
