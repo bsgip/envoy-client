@@ -27,7 +27,8 @@ from envoy_client.transport import RequestsTransport
 from envoy_client.auth import ClientCerticateAuth
 
 cert_path = '/path/to/client.cert'
-# This is derived from the client certificate and will be supplied to the aggregator/client
+# The aggregator LFDI (long-form device identifier) is derived
+# from the client certificate and will be supplied to the aggregator/client
 aggregator_lfdi = '0x21352135135'  
 
 client = AggregatorClient(
@@ -43,7 +44,14 @@ client = AggregatorClient(
 ## Registration
 
 Under the 2030.5 server model, registration of a device requires a non-neglible number of 
-requests. The registration process requires all or most of these.
+requests. The registration process requires all or most of these:
+- create `EndDevice`
+- add `DeviceInformation` to the `EndDevice`
+- add associated `DER` containers to the `EndDevice`
+- populate `DERCapability` for each associated `DER`
+- register the `EndDevice` to an associated `ConnectionPoint`
+
+These steps are explained in more detail below.
 
 ### POST EndDevice
 
@@ -84,7 +92,7 @@ Content-Type: application/xml
 
 ```
 
-The server responds with a `201: created` response and a header `location: /edev/3`
+The server responds with a `201: CREATED` response and a header `location: /edev/3`
 to indicate the location of the created resource. This value is then used in the subsequent 
 requests and is referenced in these examples as {edevID}
 
@@ -132,7 +140,7 @@ Content-Type: application/xml
 <DER></DER>
 ```
 
-The server responds with a `201: created` response and a header `location: /edev/{edevID}/der/5`
+The server responds with a `201: CREATED` response and a header `location: /edev/{edevID}/der/5`
 to indicate the location of the resource. For the following examples, this is referenced by
 {derID}.
 
@@ -184,4 +192,4 @@ Content-Type: application/xml
 </ConnectionPoint>
 ```
 
-Server responds with `200: ok`.
+Server responds with `200: OK`.
