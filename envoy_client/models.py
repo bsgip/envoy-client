@@ -23,38 +23,137 @@ DEVICE_INFORMATION_CREATE_TEMPLATE = {
 }
 
 class BaseModel(PydanticBaseModel):
+    """A sub-class of pydantic `BaseModel` that provides some convenience functions
+    around the 
+
+    Args:
+        PydanticBaseModel ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
     class Config:
         allow_population_by_field_name = True
         use_enum_values = True
 
     class XmlTemplate:
+        """
+        `XmlTemplate` provides per-class configuration options for the generation 
+        of XML (or dict) representations from a pydantic `BaseModel`. 
+        The three options that should usually be catered for are:
+        - create: this is used when generating information for a POST/PUT request
+        from the aggregator or device client, to match the required information in the
+        utility server API
+        - link: this would usually match what a utility server would expect to respond to
+        a GET request with. On the client, this is a convenience function for inspection.
+        - show: a convenience template for showing the relationships between
+        objects (for example an `EndDevice` linked to `DER`, rather than through a `DERListLink`)
+        """
         create = {}
         link = {}
         show = {}
 
-    def dict(self, *args, **kwargs):
+    def dict(self, *args, **kwargs) -> dict:
+        """Overrides the pydantic `BaseModel.dict` method to use the supplied templates
+        when the `mode` is passed in.
+
+        Returns:
+            dict: dictionary representation of the object
+        """
         if 'mode' in kwargs:
             additional_kwargs = getattr(self.XmlTemplate, kwargs.pop('mode'), {})
             return super().dict(*args, **{**kwargs, **additional_kwargs})
         return super().dict(*args, **kwargs)
 
-    def xml_dict(self, *args, **kwargs):
+    def xml_dict(self, *args, **kwargs) -> dict:
+        """Generate a dictionary corresponding to the XML representation of the object,
+        when this object is the top level in the XML document.
+        This creates an additional (single-entry) dictionary corresponding to the class name
+        of the object.
+        Note: This should only be called on a top-level document object - children objects
+        should not use this method. The `to_xml` function is a better option to generate
+        valid XML that conforms to the 2030.5 spec.
+
+        Returns:
+            dict: dictionary representation of the object
+        """
         return {self.__class__.__name__: self.dict(*args, **kwargs)}
 
     @classmethod
-    def from_xml(cls, document):
+    def from_xml(cls, document: str) -> 'BaseModel':
+        """Parse an XML document to create an instance of this class
+
+        Args:
+            document (str): XML document
+
+        Returns:
+            BaseModel: Instance of this class.
+        """
         return cls(**xmltodict.parse(document)[cls.__name__])
 
-    def to_xml(self, mode='create', pretty=False):
+    def to_xml(self, mode='create', pretty=False) -> str:
+        """Generate XML according to a particular template from this object 
+        (including nested objects)
+
+        Args:
+            mode (str, optional): Template to use for creating XML document. Defaults to 'create'.
+            pretty (bool, optional): Include whitespace in resulting XML that preserves structure. Defaults to False.
+
+        Returns:
+            str: XML document (as string)
+        """
         return xmltodict.unparse(self.xml_dict(mode=mode), full_document=False, pretty=pretty)
 
 
 
 
 class PydanticList(BaseModel):
+    """Sub-classing of a pydantic `BaseModel` that contains some convenience methods relating
+    to the generation of valid XML from a list.
+
+    The `list_field` attribute should correspond to name of the object attribute for which
+    a list is to be generated. The generated dictionary is of the following structure:
+
+    ```
+    {
+        "ObjectList": {
+            "Object": [
+                {
+                    "attribute1": "foo1",
+                    "attribute2": "bar1"
+                },
+                {
+                    "attribute1": "foo2",
+                    "attribute2": "bar2"
+                }
+            ]
+        }
+    }
+    ```
+
+    This matches the structure that `xmltodict` uses to generate XML with the following structure:
+    ```xml
+    <ObjectList>
+        <Object>
+            <attribute1>foo1</attribute1>
+            <attribute2>bar1</attribute2>
+        </Object>
+        <Object>
+            <attribute1>foo2</attribute1>
+            <attribute2>bar2</attribute2>
+        </Object>
+    </ObjectList>
+    ```
+    """
     list_field: Literal["None"] = "None"
 
-    def dict(self, *args, **kwargs):
+    def dict(self, *args, **kwargs) -> dict:
+        """Generate a dictionary corresponding to the structure that would map
+        to an XML list.
+
+        Returns:
+            dict: Object dictionary representation
+        """
         include, exclude = None, None
         if 'include' in kwargs:
             include = kwargs['include']
@@ -79,10 +178,18 @@ class PydanticList(BaseModel):
             }
         }
 
-    def xml_dict(self, *args, **kwargs):
+    def xml_dict(self, *args, **kwargs) -> dict:
+        """Generate a dictionary corresponding to the structure of an XML document.
+        Identical to `self.dict(*args, **kwargs)`
+
+        Returns:
+            dict: object dictionary
+        """
         return self.dict(*args, **kwargs)
 
+
 class DeviceCategoryType(enum.IntEnum):
+    """The Device category types defined."""
     electric_vehicle = 65536
     virtual_or_mixed_der = 262144
     reciprocating_engine = 524288
@@ -91,7 +198,12 @@ class DeviceCategoryType(enum.IntEnum):
     other_generation_system = 16777216
     other_storage_system = 33554432
 
+
 class FunctionsImplementedType(enum.IntEnum):
+    """Bitmap indicating the function sets used by the device as a client.
+    """
+    # TODO This should be implemented as flags, as they can support compositions of
+    # these properties
     device_capability = 0
     selfdevice_resource = 1
     enddevice_resource = 2
@@ -116,6 +228,7 @@ class FunctionsImplementedType(enum.IntEnum):
 
 
 class GPSLocationType(BaseModel):
+    """Specifies a GPS location, expressed in WGS 84 coordinates."""
     lat: float = Field()
     lon: float = Field()
 
@@ -127,7 +240,10 @@ class PowerSourceType(enum.IntEnum):
     emergency = 4
     unknown = 5
 
-class ActivePower(BaseModel):
+
+
+class ValueWithMultiplier(BaseModel):
+    """Abstract representation of a value with power-of-ten multiplier"""
     multipler: int = 0
     value: int = Field()
 
@@ -140,12 +256,30 @@ class ActivePower(BaseModel):
         show = create
         list = create
 
+class ActivePower(ValueWithMultiplier):
+    """The active (real) power P (in watts) is the product of root mean square (rms) 
+    voltage, rms current, and cos(theta) where theta is the phase angle of current 
+    relative to voltage. It is the primary measure of the rate of flow of energy.
+    """
+    pass
+    
+
+class ReactivePower(ValueWithMultiplier):
+    """The reactive power Q (in var) is the product of root mean square (rms) voltage, 
+    rms current, and sin(theta) where theta is the phase angle of current relative to voltage.
+    """
+    pass
+
 
 class Link(BaseModel):
+    """Generic representation of a link within an XML document"""
     href: str = Field(default=None, alias='@href')
 
 
 class DeviceInformation(BaseModel):
+    """Contains identification and other information about the device that changes very 
+    infrequently, typically only when updates are applied, if ever.
+    """
     functions_implemented: Optional[FunctionsImplementedType] = Field(alias='functionsImplemented')
     gps_location: Optional[GPSLocationType] = Field(alias='gpsLocation')
     lfdi: str = Field(alias='lFDI')
@@ -169,12 +303,21 @@ class DeviceInformation(BaseModel):
         list = create
 
 
-class ValueWithMultiplier(BaseModel):
-    value: int
-    multiplier: int = 0
-
-
 class DERType(enum.IntEnum):
+    """DER object type
+
+    0 = Not applicable/unknown 1 = Virtual or mixed DER
+    2 = Reciprocating engine
+    3 = Fuel cell
+    4 = Photovoltaic system
+    5 = Combined heat and power
+    6 = Other generation system
+    80 = Other storage system
+    81 = Electric vehicle
+    82 = EVSE
+    83 = Combined PV and storage
+    All other values reserved.
+    """
     na_unknown = 0
     virtual_or_mixed_DER = 1
     reciprocating_engine = 2
@@ -189,6 +332,13 @@ class DERType(enum.IntEnum):
 
 
 class DERCapability(BaseModel):
+    """
+    The DER resource exposes the capabilities of a specific distributed energy resource, 
+    referred to as its nameplate ratings. Ratings are read-only values established by the 
+    DER manufacturer by design or manufactured configuration, for instance, the continuous 
+    delivered active power rating capability in watts (rtgMaxW), and are available by reading 
+    the DERCapability resource.
+    """
     modes_supported: int = Field(default=1, alias='modesSupported')
     rtg_max_a: Optional[ValueWithMultiplier] = Field(alias='rtgMaxA')
     rtg_max_ah: Optional[ValueWithMultiplier] = Field(alias='rtgMaxAh')
@@ -207,6 +357,8 @@ class DERCapability(BaseModel):
 
 
 class DER(BaseModel):
+    """Contains links to DER resources
+    """
     der_capability: Optional[DERCapability] = Field(alias='DERCapability')
     class XmlTemplate:
         create = {
@@ -218,6 +370,13 @@ class DER(BaseModel):
 
 
 class ConnectionPoint(BaseModel):
+    """Extension object containing information about the connection point to which 
+    a device is connected. Under normal circumstances, the `meter_id` attribute
+    is used to convey the NMI at the device premise to the utility server.
+    
+    The `connection_point_id` is normally not used by the aggregator client, as it
+    references IDs normally used internally by the DNSP.
+    """
     connection_point_id: Optional[str] = Field(alias='connectionPointID')
     meter_id: Optional[str] = Field(alias='meterID')
 
@@ -230,6 +389,14 @@ class ConnectionPoint(BaseModel):
         list = create
 
 class EndDevice(BaseModel):
+    """Asset container that performs one or more end device functions. Contains information 
+    about individual devices in the network.
+
+    In the context of interactions with the utility server, an `EndDevice` is any system
+    which interacts directly with the utility server (i.e. an aggregator or DER client)
+    or any system for which a client acts on behalf of - for example, a site controller
+    that the aggregator is in control of.
+    """
     device_category: DeviceCategoryType = Field(alias='deviceCategory') # TODO Actually use enum values
     lfdi: str = Field(alias='lFDI')
     sfdi: Optional[str] = Field(alias='sFDI')
@@ -256,16 +423,6 @@ class EndDevice(BaseModel):
             'by_alias': True,
         }
 
-
-    # @validator('device_category')
-    # def to_int(cls, v):
-    #     print(v)
-    #     return int(v)
-
-    # @validator('lfdi')
-    # def convert_to_hex(cls, v):
-
-
     @validator('sfdi', always=True)
     def calculate_sfdi(cls, v, values):
         lfdi = int(values.get('lfdi'), 16)
@@ -275,13 +432,15 @@ class EndDevice(BaseModel):
             # truncate the lFDI
             sfdi_no_sod_checksum = lfdi>>(lfdi.bit_length()-bit_left_truncation_len)
             # calculate sum-of-digits checksum digit
-            sod_checksum = 10 - sum([int(digit) for digit in str(sfdi_no_sod_checksum)])%10
+            sod_checksum = 10 - sum([int(digit) for digit in str(sfdi_no_sod_checksum)]) % 10
             # right concatenate the checksum digit and return
             return str(sfdi_no_sod_checksum) + str(sod_checksum)
         return v
 
 
 class EndDeviceList(PydanticList):
+    """A List element to hold `EndDevice` objects.
+    """
     # Can't tell the difference between single item and list in XML, so need to cater to 
     # single item entry
     end_device: Union[List[EndDevice], EndDevice] = Field(alias='EndDevice')
@@ -293,7 +452,3 @@ class EndDeviceList(PydanticList):
         if not isinstance(v, list):
             return [v]
         return v
-
-    # def dict(self, *args, **kwargs):
-    #     return {'EndDeviceList': super().dict(*args, **kwargs)}
-
