@@ -2,7 +2,7 @@
 
 from envoy_client.models import *
 from envoy_client.client import AggregatorClient, trailing_resource_id_from_response
-from envoy_client.transport import DocumentationGeneratingTransport, RequestsTransport
+from envoy_client.transport import MockTransport, RequestsTransport
 from envoy_client.auth import LocalModeXTokenAuth
 
 # This is derived from the client certificate and will be supplied to the aggregator/client
@@ -10,7 +10,7 @@ aggregator_lfdi = '0x21352135135'
 
 
 client = AggregatorClient(
-    transport=DocumentationGeneratingTransport('https://server-location', auth=None),
+    transport=MockTransport('https://server-location', auth=None),
     lfdi=aggregator_lfdi
 )
 
@@ -24,10 +24,15 @@ end_device = EndDevice(
         functions_implemented=FunctionsImplementedType.der_control,
         gps_location=GPSLocationType(lat=-35.0, lon=144.0),
         lFDI=lfdi,
+        mf_id=1234567,
+        mf_info='Acme Corp',
+        mf_model='Acme 2000 Pro+',
+        mf_ser_num='ACME1234'
     ),
     der=[DER(der_capability=DERCapability(
         type=DERType.combined_pv_storage,
-        rtg_max_w=ValueWithMultiplier(value=5000)
+        rtg_max_w=ValueWithMultiplier(value=5000),
+        rtg_max_wh=ValueWithMultiplier(value=10000)
     ))],
     connection_point=ConnectionPoint(
         meter_id='NMI123'
