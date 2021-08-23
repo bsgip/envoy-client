@@ -129,7 +129,7 @@ Content-Type: application/xml
 ```
 
 ### POST DER
-An `EndDevice` can have multipled `DER` resources linked to it. For the purposes of this 
+An `EndDevice` can have multiple `DER` resources linked to it. For the purposes of this 
 example, it is assumed that there is only a single `DER` resource under each `EndDevice`.
 
 ```

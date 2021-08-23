@@ -6,9 +6,9 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-    'requests',
-    'xmltodict',
-    'pydantic'
+    'requests>=2.20',
+    'xmltodict>=0.12',
+    'pydantic>=1.8'
 ]
 
 
