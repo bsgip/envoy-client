@@ -280,19 +280,19 @@ class DeviceInformation(BaseModel):
     """Contains identification and other information about the device that changes very 
     infrequently, typically only when updates are applied, if ever.
     """
-    functions_implemented: Optional[FunctionsImplementedType] = Field(alias='functionsImplemented')
-    gps_location: Optional[GPSLocationType] = Field(alias='gpsLocation')
-    lfdi: str = Field(alias='lFDI')
-    mf_date: int = Field(alias='mfDate', default=0) 
+    functions_implemented: Optional[FunctionsImplementedType] = Field(alias='functionsImplemented', description='Bitmap indicating the function sets used by the device as a client')
+    gps_location: Optional[GPSLocationType] = Field(alias='gpsLocation', description='GPS location of this device')
+    lfdi: str = Field(alias='lFDI', description='Long form device identifier')
+    mf_date: int = Field(alias='mfDate', default=0, description='Date/time of manufacture') 
     mf_hw_ver: Optional[str] = Field(alias='mfHwVer', default='foo')
-    mf_id: Optional[int] = Field(alias='mfID', default=1)
-    mf_info: Optional[str] = Field(alias='mfInfo', default='foo')
-    mf_model: Optional[str] = Field(alias='mfModel', default='foo')
-    mf_ser_num: Optional[str] = Field(alias='mfSerNum', default='foo')
-    primary_power: Optional[PowerSourceType] = Field(alias='primaryPower', default=PowerSourceType.none)
-    secondary_power: Optional[PowerSourceType] = Field(alias='secondaryPower', default=PowerSourceType.none)
-    sw_act_time: Optional[int] = Field(alias='swActTime', default=0)
-    sw_ver: Optional[str] = Field(alias='swVer', default='foo')
+    mf_id: Optional[int] = Field(alias='mfID', description='The manufacturer’s IANA Enterprise Number')
+    mf_info: Optional[str] = Field(alias='mfInfo', description='Manufacturer dependent information related to the manufacture of this device')
+    mf_model: Optional[str] = Field(alias='mfModel', description='Manufacturer’s model number')
+    mf_ser_num: Optional[str] = Field(alias='mfSerNum', description='Manufacturer assigned serial number')
+    primary_power: Optional[PowerSourceType] = Field(alias='primaryPower', default=PowerSourceType.none, description='Primary source of power')
+    secondary_power: Optional[PowerSourceType] = Field(alias='secondaryPower', default=PowerSourceType.none, description='Secondary source of power')
+    sw_act_time: Optional[int] = Field(alias='swActTime', default=0, description='Activation date/time of currently running software')
+    sw_ver: Optional[str] = Field(alias='swVer', default='NA', description='Currently running software version')
 
     class XmlTemplate:
         create = {

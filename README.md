@@ -114,17 +114,17 @@ Content-Type: application/xml
                 <lat>-35.0</lat>
                 <lon>144.0</lon>
         </gpsLocation>
-        <lFDI>18764712120609</lFDI>
+        <lFDI>1172794507551</lFDI>
         <mfDate>0</mfDate>
         <mfHwVer>foo</mfHwVer>
-        <mfID>1</mfID>
-        <mfInfo>foo</mfInfo>
-        <mfModel>foo</mfModel>
-        <mfSerNum>foo</mfSerNum>
+        <mfID>1234567</mfID>
+        <mfInfo>Acme Corp</mfInfo>
+        <mfModel>Acme 2000 Pro+</mfModel>
+        <mfSerNum>ACME1234</mfSerNum>
         <primaryPower>0</primaryPower>
         <secondaryPower>0</secondaryPower>
         <swActTime>0</swActTime>
-        <swVer>foo</swVer>
+        <swVer>NA</swVer>
 </DeviceInformation>
 ```
 
