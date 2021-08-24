@@ -20,7 +20,7 @@ setuptools.setup(
     description="2030.5 DER Client",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url=None,
+    url="https://github.com/bsgip/envoy-client",
     packages=setuptools.find_packages(),
     classifiers=[
     ],

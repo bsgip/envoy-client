@@ -2,3 +2,5 @@
 .ipynb_checkpoints
 *.ipynb
 *.pyc
+envoy_client.egg-info
+dist
