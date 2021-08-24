@@ -15,7 +15,7 @@ install_requires = [
 
 setuptools.setup(
     name="envoy-client",
-    version="0.1",
+    version="0.1.1",
     author="BSGIP",
     description="2030.5 DER Client",
     long_description=long_description,
