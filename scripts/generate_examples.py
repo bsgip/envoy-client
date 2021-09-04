@@ -1,7 +1,7 @@
 
 
 from envoy_client.models import *
-from envoy_client.client import AggregatorClient, trailing_resource_id_from_response
+from envoy_client.client import EndDeviceInterface, trailing_resource_id_from_response
 from envoy_client.transport import MockTransport, RequestsTransport
 from envoy_client.auth import LocalModeXTokenAuth
 

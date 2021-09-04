@@ -31,10 +31,8 @@ def trailing_resource_id_from_response(response: requests.Response) -> int:
             return int(response.headers['location'].split('/')[-1])
     raise ValueError('Response object has no location resource.')
 
-class AggregatorClient:
-    """A 2030.5 aggregator client that functions according to the Common Smart Inverter Profile.
-
-    Used to act on behalf of non-2030.5 devices (aggregator-mediated)
+class EndDeviceInterface:
+    """A 2030.5 client interface that functions according to the Common Smart Inverter Profile.
     """
     def __init__(self, transport: Transport, lfdi: str) -> None:
         self.transport = transport
