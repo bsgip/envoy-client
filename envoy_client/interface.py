@@ -1,3 +1,4 @@
+from envoy_client.models.smart_energy import MirrorMeterReading, MirrorUsagePoint
 from typing import List, Optional
 
 import xmltodict
@@ -169,3 +170,12 @@ class EndDeviceInterface:
         for end_device in end_devices: 
             self.create_end_device(end_device)
         return
+
+
+    def create_mup(self, mup: MirrorUsagePoint):
+        return self.transport.post("/mup", mup.to_xml(mode="create"))
+
+
+    def create_mirror_meter_reading(self, mup_id: int, mirror_meter_reading: MirrorMeterReading):
+        return self.transport.post(f'/mup/{mup_id}', mirror_meter_reading.to_xml(mode="create"))
+

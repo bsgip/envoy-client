@@ -1,7 +1,7 @@
-
+import uuid
 
 from envoy_client.models import *
-from envoy_client.client import EndDeviceInterface, trailing_resource_id_from_response
+from envoy_client.interface import EndDeviceInterface, trailing_resource_id_from_response
 from envoy_client.transport import MockTransport, RequestsTransport
 from envoy_client.auth import LocalModeXTokenAuth
 
@@ -9,10 +9,27 @@ from envoy_client.auth import LocalModeXTokenAuth
 aggregator_lfdi = '0x21352135135'  
 
 
-client = AggregatorClient(
+client = EndDeviceInterface(
     transport=MockTransport('https://server-location', auth=None),
     lfdi=aggregator_lfdi
 )
+
+mmr = MirrorMeterReading(
+    mrid=int(str(uuid.uuid4()).replace('-', ''), 16),
+    description="Random meter reading",
+    reading_type=ReadingType(
+        kind=KindType.Power,
+        power_of_ten_multiplier=0,
+        uom=UomType.W,
+        phase=PhaseCode.Phase_A
+    ),
+    reading=Reading(
+        time_period=DateTimeIntervalType(duration=300, start=0),
+        value=4000
+    )
+)
+
+mmr.to_xml()
 
 # The LFDI will normally be derived from an internal aggregator globally unique identifier
 # for each system
@@ -62,3 +79,34 @@ for (der_id, der) in zip(der_ids, end_device.der):
 
 # POST ConnectionPoint
 client.create_connection_point(end_device.connection_point, edev_id=edev_id)
+
+
+mup = MirrorUsagePoint(
+    mrid=str(uuid.uuid4()),
+    description="Random mirror usage point",
+    role_flags=RoleFlagsType.IsDER | RoleFlagsType.IsMirror,
+    service_category_kind=ServiceKind.Electricity,
+    status=1,
+    device_lfdi=end_device.lfdi
+)
+
+response = client.create_mup(mup)
+mup_id = trailing_resource_id_from_response(response)
+
+mmr = MirrorMeterReading(
+    mrid=int(str(uuid.uuid4()).replace('-', ''), 16),
+    description="Random meter reading",
+    reading_type=ReadingType(
+        kind=KindType.Power,
+        power_of_ten_multiplier=0,
+        uom=UomType.W,
+        phase=PhaseCode.Phase_A
+    ),
+    reading=Reading(
+        time_period=DateTimeIntervalType(duration=300, start=0),
+        value=4000
+    )
+)
+
+
+client.create_mirror_meter_reading(mup_id=mup_id, mirror_meter_reading=mmr)
