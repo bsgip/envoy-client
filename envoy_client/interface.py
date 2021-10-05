@@ -1,3 +1,4 @@
+from envoy_client.models.smart_energy import MirrorMeterReading, MirrorUsagePoint
 from typing import List, Optional
 
 import xmltodict
@@ -31,10 +32,8 @@ def trailing_resource_id_from_response(response: requests.Response) -> int:
             return int(response.headers['location'].split('/')[-1])
     raise ValueError('Response object has no location resource.')
 
-class AggregatorClient:
-    """A 2030.5 aggregator client that functions according to the Common Smart Inverter Profile.
-
-    Used to act on behalf of non-2030.5 devices (aggregator-mediated)
+class EndDeviceInterface:
+    """A 2030.5 client interface that functions according to the Common Smart Inverter Profile.
     """
     def __init__(self, transport: Transport, lfdi: str) -> None:
         self.transport = transport
@@ -171,3 +170,12 @@ class AggregatorClient:
         for end_device in end_devices: 
             self.create_end_device(end_device)
         return
+
+
+    def create_mup(self, mup: MirrorUsagePoint):
+        return self.transport.post("/mup", mup.to_xml(mode="create"))
+
+
+    def create_mirror_meter_reading(self, mup_id: int, mirror_meter_reading: MirrorMeterReading):
+        return self.transport.post(f'/mup/{mup_id}', mirror_meter_reading.to_xml(mode="create"))
+

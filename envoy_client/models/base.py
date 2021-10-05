@@ -3,6 +3,8 @@ from typing import List, Literal, Optional, Union
 import enum
 import xmltodict
 
+from .constants import UomType
+
 
 END_DEVICE_CREATE_TEMPLATE_KWARGS = {
     'include': {'device_category', 'lfdi', 'sfdi'},
@@ -35,6 +37,7 @@ class BaseModel(PydanticBaseModel):
     class Config:
         allow_population_by_field_name = True
         use_enum_values = True
+        exclude_unset = True
 
     class XmlTemplate:
         """
@@ -53,7 +56,7 @@ class BaseModel(PydanticBaseModel):
         link = {}
         show = {}
 
-    def dict(self, *args, **kwargs) -> dict:
+    def dict(self, exclude_unset=True, *args, **kwargs) -> dict:
         """Overrides the pydantic `BaseModel.dict` method to use the supplied templates
         when the `mode` is passed in.
 
@@ -62,7 +65,7 @@ class BaseModel(PydanticBaseModel):
         """
         if 'mode' in kwargs:
             additional_kwargs = getattr(self.XmlTemplate, kwargs.pop('mode'), {})
-            return super().dict(*args, **{**kwargs, **additional_kwargs})
+            return super().dict(exclude_unset=exclude_unset, *args, **{**kwargs, **additional_kwargs})
         return super().dict(*args, **kwargs)
 
     def xml_dict(self, *args, **kwargs) -> dict:
@@ -186,6 +189,105 @@ class PydanticList(BaseModel):
             dict: object dictionary
         """
         return self.dict(*args, **kwargs)
+
+
+
+""" Abstract
+"""
+class PopulateByFieldNameBaseModel(BaseModel):
+    class Config:
+        allow_population_by_field_name = True
+
+
+class PropogateAliasBaseModel(BaseModel):
+    class Config:
+        propogate_aliases = True
+        allow_population_by_field_name = True
+
+    def dict(self, *args, **kwargs):
+        if self.Config.propogate_aliases:
+            kwargs['by_alias'] = True
+
+        data_dict = super().dict(*args, **kwargs)
+        return data_dict
+
+
+class XMLNSPrefixedAttribute(PropogateAliasBaseModel):
+    def dict(self, *args, **kwargs):
+        resp_dict = super().dict(*args, **kwargs)
+        resp_dict.update(self.Config.xmlns)
+        return resp_dict
+
+    class Config(PropogateAliasBaseModel.Config):
+        xmlns = {'@xmlns' : 'urn:ieee:std:2030.5:ns'}
+
+
+class LinkType(XMLNSPrefixedAttribute):
+    href: Optional[str] = Field(None, alias='@href')  # XSDAttribute
+
+
+class ListLinkType(LinkType):
+    all_: Optional[str] = Field(None, alias='@all')  # XSDAttribute
+
+
+
+
+
+""" Resource
+"""
+class PollRateType(PropogateAliasBaseModel):
+    pollRate: Optional[int] = Field(None, alias='@pollRate')
+
+
+class Resource(BaseModel):
+   pass
+
+
+class PENType(int):
+    pass
+
+
+class VersionType(int):
+    pass
+
+
+class mRIDType(int):
+    pass
+
+
+class IdentifiedObject(Resource):
+    description: Optional[str]
+    mrid: mRIDType = Field(alias="mRID")
+    version: Optional[VersionType]
+
+
+
+""" Time
+"""
+# p170
+class TimeType(int):
+    # Unix time
+    pass
+
+
+# p170
+class TimeOffsetType(int):
+    # A sign time offset, typically applied to a TimeType value, expressed in seconds.
+    pass
+
+
+class TimeQualityType(enum.IntEnum):
+    authoritative_source = 3
+    level_3_source = 4
+    level_4_source = 5
+    level_5_source = 6
+    intentionally_uncoordinated = 7
+
+
+class DateTimeIntervalType(BaseModel):
+    duration: int
+    start: TimeType
+
 
 
 class DeviceCategoryType(enum.IntEnum):
@@ -452,3 +554,30 @@ class EndDeviceList(PydanticList):
         if not isinstance(v, list):
             return [v]
         return v
+
+
+
+class PowerOfTenMultiplierType(int):
+
+    @classmethod
+    def __get_validators__(cls):
+        # one or more validators may be yielded which will be called in the
+        # order to validate the input, each validator will receive as an input
+        # the value returned from the previous validator
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, value):
+
+        # Required as typecasting in not inherited (usually inherited through BaseModel)
+        value = int(value)
+
+        if value > 9 or value < -9:
+            raise ValueError('PowerOfTenMultiplierType out of range -9 to 9 (Nano to Giga)')
+        return value
+
+
+class UnitValueType(BaseModel):
+    multiplier: PowerOfTenMultiplierType
+    unit: UomType
+    value: int
