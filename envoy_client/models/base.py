@@ -292,13 +292,33 @@ class DateTimeIntervalType(BaseModel):
 
 class DeviceCategoryType(enum.IntEnum):
     """The Device category types defined."""
-    electric_vehicle = 65536
-    virtual_or_mixed_der = 262144
-    reciprocating_engine = 524288
-    photovoltaic_system = 2097152
-    combined_pv_and_storage = 8388608
-    other_generation_system = 16777216
-    other_storage_system = 33554432
+
+    programmable_communicating_thermostat = 1 << 0
+    strip_heaters = 1 << 1
+    baseboard_heaters = 1 << 2
+    water_heater = 1 << 3
+    pool_pump = 1 << 4
+    sauna = 1 << 5
+    hot_tub = 1 << 6
+    smart_appliance = 1 << 7
+    irrigation_pump = 1 << 8
+    managed_commercial_and_industrial_loads = 1 << 9
+    simple_misc_loads = 1 << 10
+    exterior_lighting = 1 << 11
+    interior_lighting = 1 << 12
+    load_control_switch = 1 << 13
+    energy_management_system = 1 << 14
+    smart_energy_module = 1 << 15
+    electric_vehicle = 1 << 16
+    electric_vehicle_supply_equipment = 1 << 17
+    virtual_or_mixed_der = 1 << 18
+    reciprocating_engine = 1 << 19
+    fuel_cell = 1 << 20
+    photovoltaic_system = 1 << 21
+    combined_heat_and_power = 1 << 22
+    combined_pv_and_storage = 1 << 23
+    other_generation_system = 1 << 24
+    other_storage_system = 1 << 25
 
 
 class FunctionsImplementedType(enum.IntEnum):
@@ -424,13 +444,13 @@ class DERType(enum.IntEnum):
     virtual_or_mixed_DER = 1
     reciprocating_engine = 2
     fuel_cell = 3
-    pv_system = 4
-    combined_heat_power = 5
-    other_generation = 6
-    other_storage = 80
+    photovoltaic_system = 4
+    combined_heat_and_power = 5
+    other_generation_system = 6
+    other_storage_system = 80
     electric_vehicle = 81
-    EVSE = 82
-    combined_pv_storage = 83
+    evse = 82
+    combined_pv_and_storage = 83
 
 
 class DERCapability(BaseModel):
