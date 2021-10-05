@@ -366,7 +366,7 @@ class PowerSourceType(enum.IntEnum):
 
 class ValueWithMultiplier(BaseModel):
     """Abstract representation of a value with power-of-ten multiplier"""
-    multipler: int = 0
+    multiplier: int = 0
     value: int = Field()
 
     class XmlTemplate:
@@ -428,7 +428,8 @@ class DeviceInformation(BaseModel):
 class DERType(enum.IntEnum):
     """DER object type
 
-    0 = Not applicable/unknown 1 = Virtual or mixed DER
+    0 = Not applicable/unknown
+    1 = Virtual or mixed DER
     2 = Reciprocating engine
     3 = Fuel cell
     4 = Photovoltaic system
