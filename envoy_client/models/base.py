@@ -56,7 +56,7 @@ class BaseModel(PydanticBaseModel):
         link = {}
         show = {}
 
-    def dict(self, exclude_unset=True, *args, **kwargs) -> dict:
+    def dict(self, *args, **kwargs) -> dict:
         """Overrides the pydantic `BaseModel.dict` method to use the supplied templates
         when the `mode` is passed in.
 
@@ -65,7 +65,7 @@ class BaseModel(PydanticBaseModel):
         """
         if 'mode' in kwargs:
             additional_kwargs = getattr(self.XmlTemplate, kwargs.pop('mode'), {})
-            return super().dict(exclude_unset=exclude_unset, *args, **{**kwargs, **additional_kwargs})
+            return super().dict(*args, **{**kwargs, **additional_kwargs})
         return super().dict(*args, **kwargs)
 
     def xml_dict(self, *args, **kwargs) -> dict:
