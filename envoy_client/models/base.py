@@ -536,6 +536,7 @@ class EndDevice(BaseModel):
         create = {
             'include': {'device_category', 'lfdi', 'sfdi', 'changed_time', 'post_rate', 'enabled'},
             'by_alias': True,
+            'exclude_unset': False
         }
         link = {
             'include': {'device_category', 'lfdi', 'sfdi', 'der_list_link', 'DeviceInformationLink'},
@@ -549,7 +550,6 @@ class EndDevice(BaseModel):
     @validator('sfdi', always=True)
     def calculate_sfdi(cls, v, values):
         lfdi = int(values.get('lfdi'), 16)
-        print(lfdi)
         if lfdi and not v:
             bit_left_truncation_len = 36
             # truncate the lFDI
