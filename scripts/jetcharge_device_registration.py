@@ -1,5 +1,8 @@
+import codecs
+import json
 import logging
 import os
+from typing import List
 
 from envoy_client.auth import ClientCerticateAuth, LocalModeXTokenAuth
 from envoy_client.interface import (
@@ -25,6 +28,7 @@ logging.basicConfig(level=logging.DEBUG)
 server_url = os.getenv("ENVOY_SERVER_URL")
 certificate_path = os.getenv("ENVOY_CERTIFICATE_PATH")
 key_path = os.getenv("ENVOY_KEY_PATH")
+jetcharge_response_path = os.getenv("JETCHARGE_RESPONSE_PATH")
 
 # This is derived from the client certificate
 # and will be supplied to the aggregator/client
@@ -35,8 +39,8 @@ def get_mock_end_device() -> EndDevice:
     # The LFDI will normally be derived from an internal aggregator globally
     # unique identifier for each system
     # The lfdi should always be a string in hexadecimal
-    # If you supply a decimal, it will get coerced to a string and on
-    # the server side converted from "hex" to a decimal giving the wrong
+    # If you accidentally supply a decimal, it will get coerced to a string
+    # and on the server side converted from "hex" to a decimal giving the wrong
     # value
     lfdi = "0x0001111000011F"  # 1172794507551
     return EndDevice(
@@ -63,12 +67,12 @@ def get_mock_end_device() -> EndDevice:
     )
 
 
-def register_device(client: EndDeviceInterface, end_device: EndDevice):
+def register_device(client: EndDeviceInterface, end_device: EndDevice) -> bool:
     # POST EndDevice
     response = client.create_end_device(end_device)
     if response.status_code != 201:
-        logging.warning(response.content)
-        return
+        logging.warning(response)
+        return False
     edev_id = trailing_resource_id_from_response(response)
 
     # PUT DeviceInformation
@@ -76,8 +80,8 @@ def register_device(client: EndDeviceInterface, end_device: EndDevice):
         end_device.device_information, edev_id=edev_id
     )
     if response_di.status_code != 200:
-        logging.warning(response_di.content)
-        return
+        logging.warning(response_di)
+        return False
 
     # POST DER
     # Note: normally there will only be one `DER`,
@@ -101,11 +105,14 @@ def register_device(client: EndDeviceInterface, end_device: EndDevice):
     #     end_device.connection_point, edev_id=edev_id
     # )
 
+    return True
+
 
 def register_devices(client: EndDeviceInterface, devices: list) -> bool:
     result = True
     for device in devices:
         result = register_device(client, device)
+        logging.info(f"Registered {device.lfdi}")
         if not result:
             break
     return result
@@ -129,17 +136,107 @@ def create_aggregator_client(
     )
 
 
-def read_device_data() -> list:
-    return [get_mock_end_device()]
+def get_device_category_from_jetcharge_device_type(
+    device_type: str,
+) -> DeviceCategoryType:
+    mapper = {
+        "ChargePoint": DeviceCategoryType.electric_vehicle_supply_equipment
+    }
+    try:
+        return mapper[device_type]
+    except KeyError:
+        return DeviceCategoryType.virtual_or_mixed_der
 
 
-def main():
+def get_autoincrementing_lfdi(base: int = 0) -> str:
+    # initialize a static variable called counter
+    if "counter" not in get_autoincrementing_lfdi.__dict__:
+        get_autoincrementing_lfdi.counter = 0
+    get_autoincrementing_lfdi.counter += 1
+    return hex(base + get_autoincrementing_lfdi.counter)
+
+
+class LFDIInsufficientLengthError(Exception):
+    pass
+
+
+def get_local_lfdi_from_string(s: str) -> str:
+    SFDI_LENGTH_IN_BITS_WITHOUT_CHECKSUM = 36
+    lfdi = s.encode("utf-8").hex()
+    if int(lfdi, 16).bit_length() < SFDI_LENGTH_IN_BITS_WITHOUT_CHECKSUM:
+        raise LFDIInsufficientLengthError(
+            "Generated LFDI has insufficient number of bits"
+            / " to generate corresponding SFDI"
+        )
+    return lfdi
+
+
+def get_string_from_local_lfdi(local_lfdi: str) -> str:
+    return codecs.decode(local_lfdi, "hex").decode("utf-8")
+
+
+def get_local_lfdi_from_jetcharge_device(jetcharge_device: dict) -> str:
+    full_device_identifier = (
+        "JetCharge" + ":" + jetcharge_device["deviceIdentity"] + ":" + ""
+    )
+    return get_local_lfdi_from_string(full_device_identifier)
+
+
+class InvalidJetChargeLFDIError(Exception):
+    pass
+
+
+def get_jetcharge_device_identity_from_lfdi(jetcharge_lfdi: str) -> str:
+    full_device_identifier = get_string_from_local_lfdi(jetcharge_lfdi)
+    try:
+        return full_device_identifier.split(":")[1]
+    except IndexError:
+        raise InvalidJetChargeLFDIError(
+            "LFDI is malformed or not a valid JetCharge LFDI"
+        )
+
+
+def get_end_device_from_jetcharge_device(jetcharge_device: dict):
+    lfdi = get_local_lfdi_from_jetcharge_device(jetcharge_device)
+    # lfdi = get_autoincrementing_lfdi(base=314159265358979)
+    return EndDevice(
+        lfdi=lfdi,
+        device_category=get_device_category_from_jetcharge_device_type(
+            jetcharge_device["deviceType"]
+        ),
+        device_information=DeviceInformation(
+            lFDI=lfdi,
+            mf_ser_num=jetcharge_device["deviceIdentity"],
+        ),
+    )
+
+
+def read_device_data(mock=False) -> List[EndDevice]:
+    if mock:
+        return [get_mock_end_device()]
+
+    with open(jetcharge_response_path, mode="r") as file:
+        try:
+            jetcharge_response = json.load(file)
+        except json.JSONDecodeError:
+            logging.error("Unable to decode jetcharge response")
+
+    devices = []
+    if jetcharge_response:
+        for device in jetcharge_response["devices"]:
+            end_device = get_end_device_from_jetcharge_device(device)
+            devices.append(end_device)
+    return devices
+
+
+def main(dry_run=True):
     devices = read_device_data()
     client = create_aggregator_client(
         server_url, certificate_path, aggregator_lfdi, use_ssl_auth=False
     )
-    register_devices(client, devices)
+    if not dry_run:
+        register_devices(client, devices)
 
 
 if __name__ == "__main__":
-    main()
+    main(dry_run=False)
