@@ -528,7 +528,7 @@ class EndDevice(BaseModel):
     enabled: bool = Field(default=True)
     der_list_link: Optional[Link] = Field(default=None, alias="DERListLink")
     device_information_link: Optional[Link] = Field(default=None, alias="DeviceInformationLink")
-    der: Optional[List[DER]] = Field(alias='DER')
+    der: Optional[List[DER]] = Field(default=[], alias='DER')
     device_information: Optional[DeviceInformation] = Field(alias='deviceInformation')
     connection_point:  Optional[ConnectionPoint] = Field(alias='connectionPoint')
 
