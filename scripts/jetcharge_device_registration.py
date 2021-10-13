@@ -216,15 +216,24 @@ def get_end_device_from_jetcharge_device(jetcharge_device: dict):
     )
 
 
-def read_device_data(mock=False) -> List[EndDevice]:
-    if mock:
-        return [get_mock_end_device()]
+def read_device_data(json_path: str) -> List[EndDevice]:
+    """Converts a json file to a list of 2030.5 EndDevices
 
-    with open(jetcharge_response_path, mode="r") as file:
+    The file must contain json response from a JetCharge v3 API call
+    to https://jetcharge-illuminate.azure-api.net/chargeData/v3/deviceList
+
+    Args:
+      json_path: Path to .json file containing deviceList response from
+                 JetCharge v3 API.
+
+    Returns:
+      A list of 2030.5 EndDevices
+    """
+    with open(json_path, mode="r") as file:
         try:
             jetcharge_response = json.load(file)
         except json.JSONDecodeError:
-            logging.error("Unable to decode jetcharge response")
+            logging.error("Unable to decode JetCharge DeviceList response")
 
     devices = []
     if jetcharge_response:
@@ -234,14 +243,13 @@ def read_device_data(mock=False) -> List[EndDevice]:
     return devices
 
 
-def main(dry_run=True):
-    devices = read_device_data()
+def main():
+    devices = read_device_data(jetcharge_response_path)
     client = create_aggregator_client(
         server_url, certificate_path, aggregator_lfdi, use_ssl_auth=False
     )
-    if not dry_run:
-        register_devices(client, devices)
+    register_devices(client, devices)
 
 
 if __name__ == "__main__":
-    main(dry_run=False)
+    main()
