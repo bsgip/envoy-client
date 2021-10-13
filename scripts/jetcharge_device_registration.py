@@ -36,6 +36,11 @@ aggregator_lfdi = "0x21352135135"  # 2282004631861
 
 
 def get_mock_end_device() -> EndDevice:
+    """Creates a mock (placeholder) EndDevice.
+
+    Returns:
+      A new EndDevice object mocked with hard-coded data.
+    """
     # The LFDI will normally be derived from an internal aggregator globally
     # unique identifier for each system
     # The lfdi should always be a string in hexadecimal
@@ -68,6 +73,21 @@ def get_mock_end_device() -> EndDevice:
 
 
 def register_device(client: EndDeviceInterface, end_device: EndDevice) -> bool:
+    """Registers an EndDevice with a 2030.5 server.
+
+    The full EndDevice registration is a multi-step process involving the
+    creation of EndDevice, DeviceInformation, DER and DERCapability.
+    If the EndDevice already exists on the server (i.e. an EndDevice with
+    the same lFDI is found), the registration process does not continue and a
+    value of True is returned.
+
+    Args:
+      client: A 2030.5 client interface (EndDeviceInterface)
+      end_device: The EndDevice object to be registered
+
+    Returns:
+      True if the device registration was successful.
+    """
     # POST EndDevice
     response = client.create_end_device(end_device)
 
@@ -78,6 +98,7 @@ def register_device(client: EndDeviceInterface, end_device: EndDevice) -> bool:
     elif response.status_code != 201:  # something went wrong
         logging.warning(response)
         return False
+
     edev_id = trailing_resource_id_from_response(response)
 
     # PUT DeviceInformation
@@ -114,6 +135,15 @@ def register_device(client: EndDeviceInterface, end_device: EndDevice) -> bool:
 
 
 def register_devices(client: EndDeviceInterface, devices: list) -> bool:
+    """Registers a list of devices with a 2030.5 server
+
+    Args:
+      client: A 2030.5 client interface (EndDeviceInterface)
+      devices: A list of EndDevices to register
+
+    Returns:
+      True if all devices were registrated successful.
+    """
     result = True
     for device in devices:
         result = register_device(client, device)
@@ -129,6 +159,25 @@ def create_aggregator_client(
     aggregator_lfdi: str,
     use_ssl_auth: bool = True,
 ) -> EndDeviceInterface:
+    """Creates a 2030.5 aggregator client with the requested authentication.
+
+    The client is used by aggregators to interface to a 2030.5 server. SSL
+    encryption is the default. Disabling SSL encryption (use_ssl_auth=False)
+    will only work with a locally deployed servers that have been configured to
+    accept unencrypted connections.
+
+    Args:
+      server_url: The URL of the 2030.5 server.
+      certificate_path: A path to the certificate used for the SSL encryption.
+      aggregator_lfdi: The lFDI of the aggregator as a hex string e.g.
+                       "0x1234567890"
+      use_ssl_auth: If True uses the certificate given by certificate path to
+                    provide SSL encrypted communications to the server.
+                    If False no SSL encryption is used.
+
+    Returns:
+      The new EndDeviceInterface.
+    """
     auth = None
     if use_ssl_auth:
         auth = ClientCerticateAuth((certificate_path, key_path))
@@ -144,6 +193,15 @@ def create_aggregator_client(
 def get_device_category_from_jetcharge_device_type(
     device_type: str,
 ) -> DeviceCategoryType:
+    """Converts a JetCharge device_type to a 2030.5 DeviceCategoryType.
+
+    Args:
+      device_type: Jetcharge Device Type.
+
+    Returns:
+      The corresponding DeviceCategoryType or
+      DeviceCategoryType.virtual_or_mixed_der if no suitable mapping found.
+    """
     mapper = {
         "ChargePoint": DeviceCategoryType.electric_vehicle_supply_equipment
     }
@@ -154,6 +212,20 @@ def get_device_category_from_jetcharge_device_type(
 
 
 def get_autoincrementing_lfdi(base: int = 0) -> str:
+    """Generates an auto-incrementing lfdi.
+
+    Generated lfdi = base + offset
+    offset starts at 1 and increases by 1 after
+    each call to this function.
+
+    NOTE: Use for testing purposes only
+
+    Args:
+      base: see above
+
+    Returns:
+      A unique lfdi (one larger than the previous call)
+    """
     # initialize a static variable called counter
     if "counter" not in get_autoincrementing_lfdi.__dict__:
         get_autoincrementing_lfdi.counter = 0
@@ -166,6 +238,22 @@ class LFDIInsufficientLengthError(Exception):
 
 
 def get_local_lfdi_from_string(s: str) -> str:
+    """Generates a local LFDI from an arbitrary string.
+
+    NOTE: Use for testing purposes only (hence _local_ LFDI)
+
+    Args:
+      s: Arbitrary string of sufficient length to be converted into a local
+         LFDI. In practice this means a string of at least with length >= 5
+         ascii characters.
+
+    Returns:
+      A new (local) LFDI.
+
+    Raises:
+      LFDIInsufficientLengthError: when the argument s is too short to generate
+      an LFDI of sufficient length.
+    """
     SFDI_LENGTH_IN_BITS_WITHOUT_CHECKSUM = 36
     lfdi = s.encode("utf-8").hex()
     if int(lfdi, 16).bit_length() < SFDI_LENGTH_IN_BITS_WITHOUT_CHECKSUM:
@@ -177,10 +265,38 @@ def get_local_lfdi_from_string(s: str) -> str:
 
 
 def get_string_from_local_lfdi(local_lfdi: str) -> str:
+    """Converts a local LFDI back into the string that generated it.
+
+    See the complimentary function: get_local_lfdi_from_string(str).
+
+    Args:
+      local_lfdi: An LFDI generated with the get_local_lfdi_from_string(str)
+                  function.
+
+    Returns:
+      The string that generated the local LFDI.
+    """
     return codecs.decode(local_lfdi, "hex").decode("utf-8")
 
 
 def get_local_lfdi_from_jetcharge_device(jetcharge_device: dict) -> str:
+    """Generates a local LFDI from a jetcharge device.
+
+    Args:
+      jetcharge_device: dict containing an end device obtained from the
+                        JetCharge v3 API
+      Example jetcharge device,
+      {
+        "deviceType": "ChargePoint",
+        "deviceIdentity": "CM0056",
+        "status": "Available",
+        "online": True,
+        "childDevices": None
+      }
+
+    Returns:
+      Local LFDI
+    """
     full_device_identifier = (
         "JetCharge" + ":" + jetcharge_device["deviceIdentity"] + ":" + ""
     )
@@ -192,6 +308,18 @@ class InvalidJetChargeLFDIError(Exception):
 
 
 def get_jetcharge_device_identity_from_lfdi(jetcharge_lfdi: str) -> str:
+    """Returns the JetCharge device identity from a local LFDI.
+
+    Args:
+      jetcharge_lfdi: JetCharge LFDI generated with
+                      get_local_lfdi_from_jetcharge_device(dict)
+
+    Returns:
+      Jetcharge device_identity
+
+    Raises:
+      InvalidJetChargeLFDIError: if the LFDI can't be decoded.
+    """
     full_device_identifier = get_string_from_local_lfdi(jetcharge_lfdi)
     try:
         return full_device_identifier.split(":")[1]
@@ -202,6 +330,23 @@ def get_jetcharge_device_identity_from_lfdi(jetcharge_lfdi: str) -> str:
 
 
 def get_end_device_from_jetcharge_device(jetcharge_device: dict):
+    """Creates a 2030.5 EndDevice from a JetCharge Device.
+
+    Args:
+      jetcharge_device: dict containing an end device obtained from the
+                        JetCharge v3 API
+      Example jetcharge device,
+      {
+        "deviceType": "ChargePoint",
+        "deviceIdentity": "CM0056",
+        "status": "Available",
+        "online": True,
+        "childDevices": None
+      }
+
+    Returns:
+      The new 2030.5 EndDevice object.
+    """
     lfdi = get_local_lfdi_from_jetcharge_device(jetcharge_device)
     # lfdi = get_autoincrementing_lfdi(base=314159265358979)
     return EndDevice(
