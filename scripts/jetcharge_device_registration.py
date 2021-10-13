@@ -156,6 +156,7 @@ def register_devices(client: EndDeviceInterface, devices: list) -> bool:
 def create_aggregator_client(
     server_url: str,
     certificate_path: str,
+    key_path: str,
     aggregator_lfdi: str,
     use_ssl_auth: bool = True,
 ) -> EndDeviceInterface:
@@ -164,11 +165,13 @@ def create_aggregator_client(
     The client is used by aggregators to interface to a 2030.5 server. SSL
     encryption is the default. Disabling SSL encryption (use_ssl_auth=False)
     will only work with a locally deployed servers that have been configured to
-    accept unencrypted connections.
+    accept unencrypted connections. In this a certificate_path and key_path is
+    not required.
 
     Args:
       server_url: The URL of the 2030.5 server.
-      certificate_path: A path to the certificate used for the SSL encryption.
+      certificate_path: A path to the certificate used for SSL encryption.
+      key_path: A path to the key used for SSL encryption.
       aggregator_lfdi: The lFDI of the aggregator as a hex string e.g.
                        "0x1234567890"
       use_ssl_auth: If True uses the certificate given by certificate path to
@@ -391,7 +394,7 @@ def read_device_data(json_path: str) -> List[EndDevice]:
 def main():
     devices = read_device_data(jetcharge_response_path)
     client = create_aggregator_client(
-        server_url, certificate_path, aggregator_lfdi, use_ssl_auth=False
+        server_url, certificate_path, key_path, aggregator_lfdi, use_ssl_auth=False
     )
     register_devices(client, devices)
 
