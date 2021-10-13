@@ -70,7 +70,12 @@ def get_mock_end_device() -> EndDevice:
 def register_device(client: EndDeviceInterface, end_device: EndDevice) -> bool:
     # POST EndDevice
     response = client.create_end_device(end_device)
-    if response.status_code != 201:
+
+    if response.status_code == 200:  # OK (Device already exists)
+        edev_id = trailing_resource_id_from_response(response)
+        logging.warning(f"Device already exists. [edev_id={edev_id}]")
+        return True
+    elif response.status_code != 201:  # something went wrong
         logging.warning(response)
         return False
     edev_id = trailing_resource_id_from_response(response)
