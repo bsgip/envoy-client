@@ -1,9 +1,10 @@
 import enum
 
 
-
 """ Metering
 """
+
+
 class RtgNormalCategoryType(enum.IntEnum):
     not_specified = 0
     category_a = 1
@@ -92,7 +93,7 @@ class RoleFlagsType(enum.Flag):
     IsSubmeter = 32
 
 
-class AccumlationBehaviourType(enum.IntEnum):
+class AccumulationBehaviourType(enum.IntEnum):
     Not_applicable = 0
     Cumulative = 3
     DeltaData = 4
@@ -162,9 +163,6 @@ class TOUType(enum.IntEnum):
     TOU_O = 15
 
 
-
-
-
 class KindType(enum.IntEnum):
     Not_applicable = 0
     Currency = 3
@@ -187,9 +185,10 @@ class PhaseCode(enum.IntEnum):
     Phase_ABC = 224
 
 
-
 """ Subscription/Notification
 """
+
+
 class ResponseRequiredType(enum.Flag):
     enddevice_shall_indicate_that_message_was_received = 0
     enddevice_shall_indicate_specific_response = 1
