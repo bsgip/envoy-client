@@ -1,5 +1,6 @@
 import enum
 
+from .validated_types import StrictIntFlag
 
 """ Metering
 """
@@ -83,7 +84,7 @@ class UomType(enum.IntEnum):
     Therm = 169
 
 
-class RoleFlagsType(enum.Flag):
+class RoleFlagsType(StrictIntFlag):
     IsMirror = 0
     IsPremiseAggregationPoint = 1
     IsPEV = 2

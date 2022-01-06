@@ -5,8 +5,10 @@ import base
 import constants
 from pydantic import BaseModel, Field
 
+from .validated_types import StrictIntFlag
 
-class RoleFlagsType(enum.Flag):
+
+class RoleFlagsType(StrictIntFlag):
     IsMirror = 1
     IsPremiseAggregationPoint = 2
     IsPEV = 4
