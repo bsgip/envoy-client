@@ -36,7 +36,7 @@ key_path = os.getenv("ENVOY_KEY_PATH")
 # This is a unique number for each enterprise/business/organization
 # They are managed by IANA,
 # https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers
-# TasNetworks doens't seem to have one so we will use ANUs for the time being
+# TasNetworks doesn't seem to have one so we will use ANUs for the time being
 # ANU PEN = 28547
 private_enterprise_number = 28457
 

@@ -43,7 +43,7 @@ client = AggregatorClient(
 
 ## Registration
 
-Under the 2030.5 server model, registration of a device requires a non-neglible number of 
+Under the 2030.5 server model, registration of a device requires a non-negligible number of 
 requests. The registration process requires all or most of these:
 - create `EndDevice`
 - add `DeviceInformation` to the `EndDevice`

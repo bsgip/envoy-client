@@ -32,8 +32,8 @@ class ClientCertificateAuth(Auth):
     def __init__(self, cert: str) -> None:
         """Authorisation based on the supplied path to a client-side certificate.
         This certificate is normally issued by the relevant Certificate Authority
-        that the utility server is using. For testing purposes, this may be a self-signed
-        certificate.
+        that the utility server is using. For testing purposes, this may be a
+        self-signed certificate.
 
         Args:
             cert (str): Path to the client certificate
