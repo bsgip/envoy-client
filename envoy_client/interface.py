@@ -238,4 +238,33 @@ class EndDeviceInterface:
             f"/mup/{mup_id}", mirror_meter_reading.to_xml(mode="create")
         )
 
+    def get_paged_mups(self, start: int = 0, page_size: int = 10):
+        result = self.get_mups(start=start, limit=page_size)
+        while result:
+            # number of results ignoring filtering
+            num_results = len(
+                result.mirror_usage_point
+            )  # TODO is this correct result.mup??
+            yield result
 
+            start = start + num_results
+            result = self.get_mups(start=start, limit=page_size)
+
+    def get_mups(self, start: int = 0, limit: int = 10) -> Optional[EndDeviceList]:
+        """Retrieve all associated `MirrorUsagePoints`s.
+
+        Args:
+          start: Start index of query
+          limit: Number of mups to return
+
+        Returns:
+            List of `MirrorUsagePoint`s
+        """
+        response = self.transport.get(f"/mup?s={start}&l={limit}")
+        if response:
+            response_dct = xmltodict.parse(response.content)["MirrorUsagePointList"]
+            if "MirrorUsagePoint" not in response_dct:
+                # logger.warning("No EndDevices returned in response")
+                return None
+
+            return MirrorUsagePointList(**response_dct)

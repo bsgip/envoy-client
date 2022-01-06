@@ -1,9 +1,9 @@
 import enum
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 import base
 import constants
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from .validated_types import StrictIntFlag
 
@@ -29,12 +29,36 @@ class ServiceKind(enum.IntEnum):
 
 
 class MirrorUsagePoint(BaseModel):
-    mrid: str = Field(alias="mRID")
+    xmlns: str = Field(alias="@xmlns", default="urn:ieee:std:2030.5:ns")
+    href: str = Field(alias="@href", default="")
+    mrid: base.mRIDType = Field(alias="mRID")
     description: Optional[str] = Field()
     role_flags: RoleFlagsType = Field(alias="roleFlags")
     service_category_kind: ServiceKind = Field(alias="serviceCategoryKind")
     status: int = Field()
     device_lfdi: str = Field(alias="deviceLFDI")
+
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+        }
+
+
+class MirrorUsagePointList(base.PydanticList):
+    """A List element to hold `MirrorUsagePoint` objects."""
+
+    # Can't tell the difference between single item and list in XML, so need to cater to
+    # single item entry
+    mirror_usage_point: Union[List[MirrorUsagePoint], MirrorUsagePoint] = Field(
+        alias="MirrorUsagePoint"
+    )
+    list_field: Literal["mirror_usage_point"] = "mirror_usage_point"
+
+    @validator("mirror_usage_point")
+    def ensure_list(cls, v):
+        if not isinstance(v, list):
+            return [v]
+        return v
 
 
 # p212
@@ -63,6 +87,12 @@ class ReadingType(BaseModel):
     tiered_consumption_blocks: Optional[bool] = Field(alias="tieredConsumptionBlocks")
     uom: Optional[constants.UomType] = Field(alias="uom")
 
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+            "exclude_unset": True,
+        }
+
 
 """ Mirror Usage Point related
 """
@@ -78,11 +108,22 @@ class ReadingBase(base.Resource):
     tou_tier: Optional[constants.TOUType] = Field(alias="touTier")
     value: Optional[int]
 
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+            "exclude_unset": True,
+        }
+
 
 # p211
 class Reading(ReadingBase):
     local_id: Optional[int] = Field(alias="localID")
     subscribable: Optional[constants.SubscribableType]
+
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+        }
 
     class Config:
         fields = {"subscribable": "@subscribable"}
@@ -92,6 +133,11 @@ class Reading(ReadingBase):
 class ReadingSetBase(base.IdentifiedObject):
     time_period: base.DateTimeIntervalType = Field(alias="timePeriod")
 
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+        }
+
 
 class MeterReadingBase(base.IdentifiedObject):
     pass
@@ -99,6 +145,11 @@ class MeterReadingBase(base.IdentifiedObject):
 
 class MirrorReadingSet(ReadingSetBase):
     reading: List[Reading] = Field(alias="Reading")
+
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+        }
 
 
 # p215
@@ -110,3 +161,9 @@ class MirrorMeterReading(base.IdentifiedObject):
         alias="MirrorReadingSet"
     )
     reading: Optional[Reading] = Field(alias="Reading")
+
+    class XmlTemplate:
+        create = {
+            "by_alias": True,
+            "exclude_unset": True,
+        }
