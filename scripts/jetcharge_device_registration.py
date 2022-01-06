@@ -142,7 +142,7 @@ def register_devices(client: EndDeviceInterface, devices: list) -> bool:
       devices: A list of EndDevices to register
 
     Returns:
-      True if all devices were registrated successful.
+      True if all devices were registered successfully.
     """
     result = True
     for device in devices:
@@ -205,9 +205,7 @@ def get_device_category_from_jetcharge_device_type(
       The corresponding DeviceCategoryType or
       DeviceCategoryType.virtual_or_mixed_der if no suitable mapping found.
     """
-    mapper = {
-        "ChargePoint": DeviceCategoryType.electric_vehicle_supply_equipment
-    }
+    mapper = {"ChargePoint": DeviceCategoryType.electric_vehicle_supply_equipment}
     try:
         return mapper[device_type]
     except KeyError:
