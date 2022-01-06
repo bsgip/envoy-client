@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 
-from envoy_client.auth import ClientCerticateAuth, LocalModeXTokenAuth
+from envoy_client.auth import ClientCertificateAuth, LocalModeXTokenAuth
 from envoy_client.interface import (
     EndDeviceInterface,
     trailing_resource_id_from_response,
@@ -344,7 +344,7 @@ def create_aggregator_client(
     """
     auth = None
     if use_ssl_auth:
-        auth = ClientCerticateAuth((certificate_path, key_path))
+        auth = ClientCertificateAuth((certificate_path, key_path))
     else:
         auth = LocalModeXTokenAuth(aggregator_lfdi)
     transport = RequestsTransport(server_url, auth=auth)

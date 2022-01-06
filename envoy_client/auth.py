@@ -1,5 +1,5 @@
-
 from requests import Session
+
 
 class Auth:
     def inject_headers(self, header):
@@ -7,6 +7,7 @@ class Auth:
 
     def update_session(self, session: Session) -> None:
         raise NotImplementedError
+
 
 class LocalModeXTokenAuth:
     def __init__(self, lfdi: str):
@@ -23,14 +24,14 @@ class LocalModeXTokenAuth:
             session (Session): Transport `Session` object
         """
         # Convert to integer as this is what is checked against
-        session.headers['X-Token'] = str(int(self.lfdi, 16))
-        session.headers['X-Forwarded-Client-Cert'] = ""  # Required for local auth
+        session.headers["X-Token"] = str(int(self.lfdi, 16))
+        session.headers["X-Forwarded-Client-Cert"] = ""  # Required for local auth
 
 
-class ClientCerticateAuth(Auth):
+class ClientCertificateAuth(Auth):
     def __init__(self, cert: str) -> None:
         """Authorisation based on the supplied path to a client-side certificate.
-        This certificate is normally issued by the relevant Certificate Authority 
+        This certificate is normally issued by the relevant Certificate Authority
         that the utility server is using. For testing purposes, this may be a self-signed
         certificate.
 

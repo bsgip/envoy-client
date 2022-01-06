@@ -24,7 +24,7 @@ utility server. For interacting with the server, the simplest usage of this libr
 ```python
 from envoy_client.client import AggregatorClient
 from envoy_client.transport import RequestsTransport
-from envoy_client.auth import ClientCerticateAuth
+from envoy_client.auth import ClientCertificateAuth
 
 cert_path = '/path/to/client.cert'
 # The aggregator LFDI (long-form device identifier) is derived
