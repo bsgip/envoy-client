@@ -53,6 +53,26 @@ class EndDeviceInterface:
         self.lfdi = lfdi
         self.transport.connect()
 
+    def get_paged_end_devices(
+        self, include_self: bool = False, start: int = 0, page_size: int = 10
+    ):
+        result = self.get_end_devices(start=start, limit=page_size)
+        while result:
+            # number of results ignoring filtering
+            num_results = len(result.end_device)
+            if include_self:
+                yield result
+            else:
+                # filter out client end_device
+                filtered = filter(
+                    lambda item: item.lfdi != self.lfdi, result.end_device
+                )
+                result.end_device = list(filtered)
+                yield result
+
+            start = start + num_results
+            result = self.get_end_devices(start=start, limit=page_size)
+
     def get_end_devices(
         self, include_self=False, start: int = 0, limit: int = 10
     ) -> Optional[EndDeviceList]:
