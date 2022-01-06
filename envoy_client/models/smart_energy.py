@@ -1,10 +1,9 @@
 import enum
 from typing import List, Literal, Optional, Union
 
-import base
-import constants
 from pydantic import BaseModel, Field, validator
 
+from . import base, constants
 from .validated_types import StrictIntFlag
 
 
