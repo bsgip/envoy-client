@@ -85,13 +85,13 @@ class UomType(enum.IntEnum):
 
 
 class RoleFlagsType(StrictIntFlag):
-    IsMirror = 0
-    IsPremiseAggregationPoint = 1
-    IsPEV = 2
-    IsDER = 4
-    IsRevenueQuality = 8
-    IsDC = 16
-    IsSubmeter = 32
+    IsMirror = 1
+    IsPremiseAggregationPoint = 2
+    IsPEV = 4
+    IsDER = 8
+    IsRevenueQuality = 16
+    IsDC = 32
+    IsSubmeter = 64
 
 
 class AccumulationBehaviourType(enum.IntEnum):
@@ -113,14 +113,14 @@ class ServiceKind(enum.IntEnum):
     Cooling = 6
 
 
-class QualityFlagsType(enum.Flag):
-    Valid = 0
-    Manually_edited = 1
-    estimated_using_reference_day = 2
-    estimated_using_linear_interpolation = 4
-    questionable = 8
-    derived = 16
-    projected = 32
+class QualityFlagsType(StrictIntFlag):
+    Valid = 1
+    Manually_edited = 2
+    estimated_using_reference_day = 4
+    estimated_using_linear_interpolation = 8
+    questionable = 16
+    derived = 32
+    projected = 64
 
 
 # p163
@@ -190,10 +190,10 @@ class PhaseCode(enum.IntEnum):
 """
 
 
-class ResponseRequiredType(enum.Flag):
-    enddevice_shall_indicate_that_message_was_received = 0
-    enddevice_shall_indicate_specific_response = 1
-    enduser_customer_response_is_required = 2
+class ResponseRequiredType(StrictIntFlag):
+    enddevice_shall_indicate_that_message_was_received = 1
+    enddevice_shall_indicate_specific_response = 2
+    enduser_customer_response_is_required = 4
 
 
 class SubscribableType(enum.IntEnum):

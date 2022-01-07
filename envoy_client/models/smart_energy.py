@@ -1,39 +1,17 @@
-import enum
 from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, validator
+from pydantic import Field, validator
 
 from . import base, constants
-from .validated_types import StrictIntFlag
 
 
-class RoleFlagsType(StrictIntFlag):
-    IsMirror = 1
-    IsPremiseAggregationPoint = 2
-    IsPEV = 4
-    IsDER = 8
-    IsRevenueQuality = 16
-    IsDC = 32
-    IsSubmeter = 64
-
-
-class ServiceKind(enum.IntEnum):
-    Electricity = 0
-    Gas = 1
-    Water = 2
-    Time = 3
-    Pressure = 4
-    Heat = 5
-    Cooling = 6
-
-
-class MirrorUsagePoint(BaseModel):
+class MirrorUsagePoint(base.BaseModel):
     xmlns: str = Field(alias="@xmlns", default="urn:ieee:std:2030.5:ns")
     href: str = Field(alias="@href", default="")
     mrid: base.mRIDType = Field(alias="mRID")
     description: Optional[str] = Field()
-    role_flags: RoleFlagsType = Field(alias="roleFlags")
-    service_category_kind: ServiceKind = Field(alias="serviceCategoryKind")
+    role_flags: constants.RoleFlagsType = Field(alias="roleFlags")
+    service_category_kind: constants.ServiceKind = Field(alias="serviceCategoryKind")
     status: int = Field()
     device_lfdi: str = Field(alias="deviceLFDI")
 
@@ -61,7 +39,7 @@ class MirrorUsagePointList(base.PydanticList):
 
 
 # p212
-class ReadingType(BaseModel):
+class ReadingType(base.BaseModel):
     accumulation_behaviour: Optional[constants.AccumulationBehaviourType] = Field(
         alias="accumulationBehaviour"
     )
