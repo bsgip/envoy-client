@@ -6,6 +6,8 @@ import xmltodict
 
 from envoy_client.models.smart_energy import (
     MirrorMeterReading,
+    MirrorMeterReadingList,
+    MirrorReadingSetList,
     MirrorUsagePoint,
     MirrorUsagePointList,
 )
@@ -268,3 +270,32 @@ class EndDeviceInterface:
                 return None
 
             return MirrorUsagePointList(**response_dct)
+
+    def get_mup(self, mup_id: int) -> Optional[MirrorUsagePointList]:
+        response = self.transport.get(f"/mup/{mup_id}")
+        if response:
+            response_dct = xmltodict.parse(response.content)["MirrorUsagePointList"]
+            if "MirrorUsagePoint" not in response_dct:
+                logger.warning("No MirrorUsagePoints returned in response")
+                return None
+            return MirrorUsagePointList(**response_dct)
+
+    def get_mmrs(self, mup_id: int):
+        response = self.transport.get(f"/mup/{mup_id}/mmr")
+        if response:
+            response_dct = xmltodict.parse(response.content)["MirrorMeterReadingList"]
+            if "MirrorMeterReading" not in response_dct:
+                logger.warning("No MirrorMeterReadings returned in response")
+                return None
+            return MirrorMeterReadingList(**response_dct)
+        return None
+
+    def get_readings(self, mmr_id: int):
+        response = self.transport.get(f"/mup/mmr/{mmr_id}/readings")
+        if response:
+            response_dct = xmltodict.parse(response.content)["MirrorReadingSetList"]
+            if "Reading" not in response_dct:
+                logger.warning("No Readings returned in response")
+                return None
+            return MirrorReadingSetList(**response_dct)
+        return None

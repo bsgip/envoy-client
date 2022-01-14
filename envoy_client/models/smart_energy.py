@@ -94,6 +94,9 @@ class ReadingBase(base.Resource):
 
 # p211
 class Reading(ReadingBase):
+    href: Optional[str] = Field(
+        alias="@href", default=""
+    )  # added for export from server (not part of standard)
     local_id: Optional[int] = Field(alias="localID")
     subscribable: Optional[constants.SubscribableType]
 
@@ -131,6 +134,9 @@ class MirrorReadingSet(ReadingSetBase):
 
 # p215
 class MirrorMeterReading(base.IdentifiedObject):
+    href: Optional[str] = Field(
+        alias="@href", default=""
+    )  # added for export from server (not part of standard)
     last_update_time: Optional[base.TimeType] = Field(alias="lastUpdateTime")
     next_update_time: Optional[base.TimeType] = Field(alias="nextUpdateTime")
     reading_type: Optional[ReadingType] = Field(alias="ReadingType")
@@ -144,3 +150,35 @@ class MirrorMeterReading(base.IdentifiedObject):
             "by_alias": True,
             "exclude_unset": True,
         }
+
+
+class MirrorMeterReadingList(base.PydanticList):
+    """A List element to hold `MirrorMeterReading` objects."""
+
+    # Can't tell the difference between single item and list in XML, so need to cater to
+    # single item entry
+    mirror_meter_reading: Union[List[MirrorMeterReading], MirrorMeterReading] = Field(
+        alias="MirrorMeterReading"
+    )
+    list_field: Literal["mirror_meter_reading"] = "mirror_meter_reading"
+
+    @validator("mirror_meter_reading")
+    def ensure_list(cls, v):
+        if not isinstance(v, list):
+            return [v]
+        return v
+
+
+class MirrorReadingSetList(base.PydanticList):
+    """A List element to hold `MirrorUsagePoint` objects."""
+
+    # Can't tell the difference between single item and list in XML, so need to cater to
+    # single item entry
+    reading: Union[List[Reading], Reading] = Field(alias="Reading")
+    list_field: Literal["reading"] = "reading"
+
+    @validator("reading")
+    def ensure_list(cls, v):
+        if not isinstance(v, list):
+            return [v]
+        return v
