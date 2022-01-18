@@ -315,6 +315,40 @@ def readings(mmr_id: int, format: str, max_readings: int):
             )
 
 
+@cli.command()
+@click.option(
+    "--id", "mmr_id", required=True, type=int, help="Id of the Mirror Meter Reading"
+)
+@click.option(
+    "--format",
+    type=click.Choice(list(Format.__members__), case_sensitive=False),
+    callback=lambda context, parameter, value: getattr(Format, value),
+    default=Format.TABLE.value,
+)
+@click.option(
+    "--max", "max_readings", default=50, type=int, help="Max number of readings"
+)
+def paged_readings(mmr_id: int, format: str, max_readings: int):
+    client = create_default_client()
+    num_readings = 0
+    for paged_result in client.get_paged_readings(mmr_id=mmr_id):
+        for reading in paged_result.reading:
+            reading_id = get_reading_id_from_url(reading.href)
+            print(
+                ",".join(
+                    [
+                        f"{reading_id}",
+                        f"{reading.time_period.start}",
+                        f"{reading.time_period.duration}",
+                        f"{reading.value}",
+                    ]
+                )
+            )
+            num_readings += 1
+        if num_readings >= max_readings:
+            break
+
+
 if __name__ == "__main__":
     configure_logging()
     cli()
