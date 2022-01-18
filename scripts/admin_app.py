@@ -154,7 +154,11 @@ def devices():
         for end_device in paged_result.end_device:
             dc = base.DeviceCategoryType(end_device.device_category)
             edev_id = get_edev_id_from_der_link_list_url(end_device.der_list_link.href)
-            table.add_row(f"{edev_id}", end_device.lfdi, dc.name)
+            table.add_row(
+                f"{edev_id}",
+                end_device.lfdi,
+                dc.name,
+            )
             num_devices += 1
     table.caption_justify = "right"
     table.caption_style = "None"
@@ -261,9 +265,7 @@ def mmrs(mup_id):
     callback=lambda context, parameter, value: getattr(Format, value),
     default=Format.TABLE.value,
 )
-def readings(mmr_id: int, format: str):
     client = create_default_client()
-    readings = client.get_readings(mmr_id).reading
 
     if format is Format.TABLE:
         table = Table(
