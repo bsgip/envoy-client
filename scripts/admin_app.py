@@ -265,7 +265,12 @@ def mmrs(mup_id):
     callback=lambda context, parameter, value: getattr(Format, value),
     default=Format.TABLE.value,
 )
+@click.option(
+    "--max", "max_readings", default=50, type=int, help="Max number of readings"
+)
+def readings(mmr_id: int, format: str, max_readings: int):
     client = create_default_client()
+    readings = client.get_readings(mmr_id, limit=max_readings).reading
 
     if format is Format.TABLE:
         table = Table(
