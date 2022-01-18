@@ -290,8 +290,19 @@ class EndDeviceInterface:
             return MirrorMeterReadingList(**response_dct)
         return None
 
-    def get_readings(self, mmr_id: int):
-        response = self.transport.get(f"/mup/mmr/{mmr_id}/readings")
+    def get_paged_readings(self, mmr_id: int, start: int = 0, page_size: int = 100):
+        result = self.get_readings(mmr_id=mmr_id, start=start, limit=page_size)
+        while result:
+            # number of results ignoring filtering
+            num_results = len(result.reading)
+            yield result
+
+            start = start + num_results
+            result = self.get_readings(mmr_id=mmr_id, start=start, limit=page_size)
+
+    def get_readings(self, mmr_id: int, start: int = 0, limit: int = 100):
+        url = f"/mup/mmr/{mmr_id}/readings?s={start}&l={limit}"
+        response = self.transport.get(url)
         if response:
             response_dct = xmltodict.parse(response.content)["MirrorReadingSetList"]
             if "Reading" not in response_dct:
